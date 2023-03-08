@@ -19,7 +19,10 @@
 '--------
 #declare key$
 #declare k,a$
-#declare x%, y%, w%, h%
+#declare x%, y%, w%, h%, x2%, y2%
+#declare mx%, my%, mb%
+#declare menu_selection = -1
+#declare ret%
 
 #struct BUTTON x%, y%, w%, h%, text$
 
@@ -37,7 +40,7 @@ BUTTON btns(MAX_BTN) = [     {x5F}
 '----
   gosub init   
   gosub draw_menu_system
-  getkey key$
+  gosub check_input
   gosub ender
   end
 
@@ -48,7 +51,7 @@ BUTTON btns(MAX_BTN) = [     {x5F}
     read x%
     poke $0600+k, x%
   next k
-  mouse on
+  mouse on, 1
   sprite 0,1,1
   return
 
@@ -62,17 +65,76 @@ BUTTON btns(MAX_BTN) = [     {x5F}
 
 .draw_menu_system
 '----------------
+  ' clear prior items
+  pen 0,0
+  ' don't use box, too slow to fill
+  ' box 0, 0, 640, 24, 1
+  for k = 0 to 24
+    line 0, k, 639, k
+  next k
+  pen 0,1
+
+  ' draw items
   for k = 0 to MAX_BTN-1
     x%=btns_x%(k)
     y%=btns_y%(k)
     w%=(x% + btns_w%(k))
     h%=(y% + btns_h%(k))
 
-    box x%*8, y%*8, w%*8, h%*8
+    pen 0, 1
+    if menu_selection=k then begin
+      box x%*8, y%*8, w%*8, h%*8, 1
+      pen 0, 0
+    bend:else begin
+      box x%*8, y%*8, w%*8, h%*8
+    bend
     char x%+1, y%*8+4, CHR_HEIGHT, CHR_WIDTH, CHR_DIR_RIGHT, btns_text$(k)
+    pen 0, 1
   next k
   return
 
+.check_input
+'-----------
+  get a$
+  if a$="x" then return
+  rmouse mx%, my%, mb%
+  mx%=(mx%-24)*2
+  my%=(my%-50)*2
+
+  if mb%=128 then begin
+    gosub check_button_hit:if ret%=1 then goto endif_mb_1
+
+  .endif_mb_1
+  bend
+
+  'debug stuff
+  'a$ = str$(mx%) + ", " + str$(my%) + ", " + str$(mb%)
+  'pen 0, 0
+  'box 0, 64, 150, 80, 1
+  'pen 0, 1
+  'char 0, 64, CHR_HEIGHT, CHR_WIDTH, CHR_DIR_RIGHT, a$
+
+  goto check_input
+
+.check_button_hit
+'----------------
+  ret%=0
+  for k = 0 to MAX_BTN-1
+    x%=btns_x%(k)*8
+    y%=btns_y%(k)*8
+    w%=btns_w%(k)*8
+    h%=btns_h%(k)*8
+    x2%=x%+w%
+    y2%=y%+h%
+    if x%<=mx% and mx%<=x2% and y%<=my% and my%<=y2% then begin
+      menu_selection = k
+      gosub draw_menu_system
+      k=MAX_BTN-1
+      ret%=1
+    bend
+  next k
+  return
+  
 .ender
 '-----
   screen close
