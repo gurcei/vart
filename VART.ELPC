@@ -1,0 +1,107 @@
+' VART
+' ====
+' An open-source tool for drawing 640x400 vector art on the mega65
+
+#output "vart"
+
+' menu system
+' +------+--------+-----+------+----------+---------+------+------+------+-----+
+' ! line ! circle ! box ! poly ! (x) fill ! palette ! load ! save ! undo ! redo!
+' +------+--------+-----+------+----------+---------+------+------+------+-----+
+' x = exit
+' ? = show/hide menu
+' ctrl+1-8 = select from 1st 8 colours
+' mega+1-8 = select from 2nd 8 colours
+' ctrl+d = choose from default palette
+' ctrl+a = choose from alternate palette
+
+.declares
+'--------
+#declare key$
+#declare k,a$
+#declare x%, y%, w%, h%
+
+#struct BUTTON x%, y%, w%, h%, text$
+
+#define MAX_BTN = 5
+
+BUTTON btns(MAX_BTN) = [     {x5F}
+  [ 0,  0, 6, 3, "line" ],   {x5F}
+  [ 6,  0, 8, 3, "circle" ], {x5F}
+  [ 14, 0, 5, 3, "box" ],    {x5F}
+  [ 19, 0, 6, 3, "fill" ],   {x5F}
+  [ 25, 0, 6, 3, "exit" ]    {x5F}
+] 
+
+.main
+'----
+  gosub init   
+  gosub draw_menu_system
+  getkey key$
+  gosub ender
+  end
+
+.init
+'----
+  screen 0,640,400,4
+  for k = 0 to 62
+    read x%
+    poke $0600+k, x%
+  next k
+  mouse on
+  sprite 0,1,1
+  return
+
+#define CHR_HEIGHT = 2
+#define CHR_WIDTH = 1
+
+#define CHR_DIR_UP = 1
+#define CHR_DIR_RIGHT = 2
+#define CHR_DIR_DOWN = 4
+#define CHR_DIR_LEFT = 8
+
+.draw_menu_system
+'----------------
+  for k = 0 to MAX_BTN-1
+    x%=btns_x%(k)
+    y%=btns_y%(k)
+    w%=(x% + btns_w%(k))
+    h%=(y% + btns_h%(k))
+
+    box x%*8, y%*8, w%*8, h%*8
+    char x%+1, y%*8+4, CHR_HEIGHT, CHR_WIDTH, CHR_DIR_RIGHT, btns_text$(k)
+  next k
+  return
+
+.ender
+'-----
+  screen close
+  mouse off
+  return
+
+.data
+'mouse pointer
+data %11111111, %00000000, %00000000
+data %11111110, %00000000, %00000000
+data %11111100, %00000000, %00000000
+data %11111000, %00000000, %00000000
+data %11111100, %00000000, %00000000
+data %11101110, %00000000, %00000000
+data %11000111, %00000000, %00000000
+data %10000011, %10000000, %00000000
+
+data %00000001, %11000000, %00000000
+data %00000000, %11100000, %00000000
+data %00000000, %01110000, %00000000
+data %00000000, %00111000, %00000000
+data %00000000, %00011100, %00000000
+data %00000000, %00001110, %00000000
+data %00000000, %00000111, %00000000
+data %00000000, %00000011, %10000000
+
+data %00000000, %00000001, %00000000
+data %00000000, %00000000, %00000000
+data %00000000, %00000000, %00000000
+data %00000000, %00000000, %00000000
+data %00000000, %00000000, %00000000
+ÿ
