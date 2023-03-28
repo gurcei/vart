@@ -25,23 +25,28 @@
 #declare ret%
 
 #declare line_state%, lx0%, ly0%
+#declare circle_state%, cx0%, cy0%, radius%
+#declare box_state%, bx0%, by0%
 
-#struct BUTTON x%, y%, w%, h%, text$
+#struct BUTTON x%, y%, w%, h%, type%, state%, text$
+
+#define TYPE_NORMAL = 0
+#define TYPE_TOGGLE = 1
 
 #define MAX_BTN = 5
 
-#declare LINE   = 0
-#declare CIRCLE = 1
-#declare BOX    = 2
-#declare FILL   = 3
-#declare EXIT   = 4
+#define LINE   = 0
+#define CIRCLE = 1
+#define BOX    = 2
+#define FILL   = 3
+#define EXIT   = 4
 
 BUTTON btns(MAX_BTN) = [     {x5F}
-  [ 0,  0, 6, 3, "line" ],   {x5F}
-  [ 6,  0, 8, 3, "circle" ], {x5F}
-  [ 14, 0, 5, 3, "box" ],    {x5F}
-  [ 19, 0, 6, 3, "fill" ],   {x5F}
-  [ 25, 0, 6, 3, "exit" ]    {x5F}
+  [ 0,  0, 6, 3, TYPE_NORMAL, 0, "line" ],   {x5F}
+  [ 6,  0, 8, 3, TYPE_NORMAL, 0, "circle" ], {x5F}
+  [ 14, 0, 5, 3, TYPE_NORMAL, 0, "box" ],    {x5F}
+  [ 19, 0, 6, 3, TYPE_TOGGLE, 0, "fill" ],   {x5F}
+  [ 25, 0, 6, 3, TYPE_NORMAL, 0, "exit" ]    {x5F}
 ] 
 
 .main
@@ -91,11 +96,16 @@ BUTTON btns(MAX_BTN) = [     {x5F}
     h%=(y% + btns_h%(k))
 
     pen 0, 1
-    if menu_selection=k then begin
+    if menu_selection=k and btns_type%(k) <> TYPE_TOGGLE then begin
       box x%*8, y%*8, w%*8, h%*8, 1
       pen 0, 0
     bend:else begin
       box x%*8, y%*8, w%*8, h%*8
+      if btns_type%(k) = TYPE_TOGGLE and btns_state%(k)<>0 then begin
+        pen 0,3
+        box x%*8, y%*8, w%*8, h%*8, 1
+        pen 0,0
+      bend
     bend
     char x%+1, y%*8+4, CHR_HEIGHT, CHR_WIDTH, CHR_DIR_RIGHT, btns_text$(k)
     pen 0, 1
@@ -113,14 +123,27 @@ BUTTON btns(MAX_BTN) = [     {x5F}
 
 .on_click_circle
 '---------------
+  if circle_state% = 0 then cx0%=mx%:cy0%=my%:circle_state%=1:return
+  if circle_state% = 1 then begin
+    radius% = sqr( (mx%-cx0%)^2 + (my%-cy0%)^2 )
+    circle cx0%, cy0%, radius%, btns_state%(FILL)
+    circle_state% = 0
+  bend
   return
 
 .on_click_box
 '------------
+  if box_state% = 0 then bx0%=mx%:by0%=my%:box_state%=1:return
+  if box_state% = 1 then begin
+    box bx0%, by0%, mx%, my%, btns_state%(FILL)
+    box_state% = 0
+  bend
   return
 
 .on_click_fill
 '-------------
+  btns_state%(FILL) = abs(not btns_state%(FILL))
+  gosub draw_menu_system
   return
 
 .check_action_click
@@ -128,27 +151,26 @@ BUTTON btns(MAX_BTN) = [     {x5F}
   if menu_selection = LINE then gosub on_click_line
   if menu_selection = CIRCLE then gosub on_click_circle
   if menu_selection = BOX then gosub on_click_box
-  if menu_selection = FILL then gosub on_click_fill
   return
 
 .check_colour_keypress
 '---------------------
-  if a$=chr$(144) then pen 0,0
-  if a$=chr$(5) then pen 0,1
-  if a$=chr$(28) then pen 0,2
-  if a$=chr$(159) then pen 0,3
-  if a$=chr$(156) then pen 0,4
-  if a$=chr$(30) then pen 0,5
-  if a$=chr$(31) then pen 0,6
-  if a$=chr$(158) then pen 0,7
-  if a$=chr$(129) then pen 0,8
-  if a$=chr$(149) then pen 0,9
-  if a$=chr$(150) then pen 0,10
-  if a$=chr$(151) then pen 0,11
-  if a$=chr$(152) then pen 0,12
-  if a$=chr$(153) then pen 0,13
-  if a$=chr$(154) then pen 0,14
-  if a$=chr$(155) then pen 0,15
+  if a$=chr$(144) then pen 0,0:sprite 0,1,0
+  if a$=chr$(5) then pen 0,1:sprite 0,1,1
+  if a$=chr$(28) then pen 0,2:sprite 0,1,2
+  if a$=chr$(159) then pen 0,3:sprite 0,1,3
+  if a$=chr$(156) then pen 0,4:sprite 0,1,4
+  if a$=chr$(30) then pen 0,5:sprite 0,1,5
+  if a$=chr$(31) then pen 0,6:sprite 0,1,6
+  if a$=chr$(158) then pen 0,7:sprite 0,1,7
+  if a$=chr$(129) then pen 0,8:sprite 0,1,8
+  if a$=chr$(149) then pen 0,9:sprite 0,1,9
+  if a$=chr$(150) then pen 0,10:sprite 0,1,10
+  if a$=chr$(151) then pen 0,11:sprite 0,1,11
+  if a$=chr$(152) then pen 0,12:sprite 0,1,12
+  if a$=chr$(153) then pen 0,13:sprite 0,1,13
+  if a$=chr$(154) then pen 0,14:sprite 0,1,14
+  if a$=chr$(155) then pen 0,15:sprite 0,1,15
   return
 
 .check_input
@@ -168,7 +190,7 @@ BUTTON btns(MAX_BTN) = [     {x5F}
     
     if ret%=1 then begin
       if menu_selection = EXIT then screen close:end
-
+      if menu_selection = FILL then gosub on_click_fill
     bend:else begin
       gosub check_action_click
     bend
