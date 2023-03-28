@@ -20,13 +20,19 @@
 #declare key$
 #declare k,a$
 #declare x%, y%, w%, h%, x2%, y2%
-#declare mx%, my%, mb%
+#declare mx%, my%, mb%, mb_old%
 #declare menu_selection = -1
 #declare ret%
 
 #struct BUTTON x%, y%, w%, h%, text$
 
 #define MAX_BTN = 5
+
+#declare LINE   = 0
+#declare CIRCLE = 1
+#declare BOX    = 2
+#declare FILL   = 3
+#declare EXIT   = 4
 
 BUTTON btns(MAX_BTN) = [     {x5F}
   [ 0,  0, 6, 3, "line" ],   {x5F}
@@ -63,15 +69,16 @@ BUTTON btns(MAX_BTN) = [     {x5F}
 #define CHR_DIR_DOWN = 4
 #define CHR_DIR_LEFT = 8
 
+.clear_menu
+'----------
+  for k=0 to 7
+    edma 3, 640*2, 0, $40000+k*$4000
+  next k
+  return
+
 .draw_menu_system
 '----------------
-  ' clear prior items
-  pen 0,0
-  ' don't use box, too slow to fill
-  ' box 0, 0, 640, 24, 1
-  for k = 0 to 24
-    line 0, k, 639, k
-  next k
+  gosub clear_menu
   pen 0,1
 
   ' draw items
@@ -93,6 +100,30 @@ BUTTON btns(MAX_BTN) = [     {x5F}
   next k
   return
 
+.on_click_line
+'-------------
+  return
+
+.on_click_circle
+'---------------
+  return
+
+.on_click_box
+'------------
+  return
+
+.on_click_fill
+'-------------
+  return
+
+.check_action_click
+'------------------
+  if menu_selection = LINE then gosub on_click_line
+  if menu_selection = CIRCLE then gosub on_click_circle
+  if menu_selection = BOX then gosub on_click_box
+  if menu_selection = FILL then gosub on_click_fill
+  return
+
 .check_input
 '-----------
   get a$
@@ -101,11 +132,20 @@ BUTTON btns(MAX_BTN) = [     {x5F}
   mx%=(mx%-24)*2
   my%=(my%-50)*2
 
-  if mb%=128 then begin
-    gosub check_button_hit:if ret%=1 then goto endif_mb_1
+  if mb%=128 and mb_old%=0 then begin
+    mb_old%=128
 
-  .endif_mb_1
+    gosub check_button_hit
+    
+    if ret%=1 then begin
+      if menu_selection = EXIT then screen close:end
+
+    bend:else begin
+      gosub check_action_click
+    bend
   bend
+
+  if mb_old%=128 and mb%=0 then mb_old% = 0
 
   'debug stuff
   'a$ = str$(mx%) + ", " + str$(my%) + ", " + str$(mb%)
@@ -128,9 +168,9 @@ BUTTON btns(MAX_BTN) = [     {x5F}
     y2%=y%+h%
     if x%<=mx% and mx%<=x2% and y%<=my% and my%<=y2% then begin
       menu_selection = k
+      ret%=1
       gosub draw_menu_system
       k=MAX_BTN-1
-      ret%=1
     bend
   next k
   return
