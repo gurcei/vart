@@ -24,6 +24,8 @@
 #declare menu_selection = -1
 #declare ret%
 
+#declare line_state%, lx0%, ly0%
+
 #struct BUTTON x%, y%, w%, h%, text$
 
 #define MAX_BTN = 5
@@ -102,6 +104,11 @@ BUTTON btns(MAX_BTN) = [     {x5F}
 
 .on_click_line
 '-------------
+  if line_state% = 0 then lx0%=mx%:ly0%=my%:line_state%=1:dot mx%,my%:return
+  if line_state% = 1 then begin
+    line lx0%, ly0%, mx%, my%
+    line_state% = 0
+  bend
   return
 
 .on_click_circle
@@ -124,10 +131,32 @@ BUTTON btns(MAX_BTN) = [     {x5F}
   if menu_selection = FILL then gosub on_click_fill
   return
 
+.check_colour_keypress
+'---------------------
+  if a$=chr$(144) then pen 0,0
+  if a$=chr$(5) then pen 0,1
+  if a$=chr$(28) then pen 0,2
+  if a$=chr$(159) then pen 0,3
+  if a$=chr$(156) then pen 0,4
+  if a$=chr$(30) then pen 0,5
+  if a$=chr$(31) then pen 0,6
+  if a$=chr$(158) then pen 0,7
+  if a$=chr$(129) then pen 0,8
+  if a$=chr$(149) then pen 0,9
+  if a$=chr$(150) then pen 0,10
+  if a$=chr$(151) then pen 0,11
+  if a$=chr$(152) then pen 0,12
+  if a$=chr$(153) then pen 0,13
+  if a$=chr$(154) then pen 0,14
+  if a$=chr$(155) then pen 0,15
+  return
+
 .check_input
 '-----------
   get a$
   if a$="x" then return
+  gosub check_colour_keypress
+
   rmouse mx%, my%, mb%
   mx%=(mx%-24)*2
   my%=(my%-50)*2
