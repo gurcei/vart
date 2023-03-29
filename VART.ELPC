@@ -25,6 +25,8 @@
 #declare ret%
 #declare selected_colour% = 1
 #declare old_menu_selection% = -1
+#declare ymin%, ymax%, idx%, pidx%, px%(20)
+#declare rev%, y0%, y1%, x0%, x1%, tmp%, m, c, i%, j%, swapped%
 
 #declare line_state%, lx0%, ly0%
 #declare circle_state%, cx0%, cy0%, radius%
@@ -161,6 +163,99 @@ BUTTON btns(MAX_BTN) = [     {x5F}
   bend
   return
 
+.find_ymin_ymax
+'--------------
+  ymin% = poly_y%(0)
+  ymax% = poly_y%(0)
+  for idx% = 0 to poly_idx%-1
+    if poly_y%(idx%) < ymin% then ymin% = poly_y%(idx%)
+    if poly_y%(idx%) > ymax% then ymax% = poly_y%(idx%)
+  next idx%
+  return 
+
+.is_y_in_line_yrange
+'-------------------
+  ret% = 0: rev% = 0
+  y0% = poly_y%(idx%-1)
+  y1% = poly_y%(idx%)
+  if y0% > y1% then tmp%=y0%:y0% = y1%:y1% = tmp%:rev%=1
+  if y0% < y% and y% < y1% then ret% = 1
+  return
+
+.check_line_intersect
+'--------------------
+  gosub is_y_in_line_yrange
+  if ret% = 0 then return
+
+  x0% = poly_x%(idx%-1)
+  x1% = poly_x%(idx%)
+  if rev%=1 then tmp%=x0%:x0% = x1%:x1% = tmp%
+  m = (y1%-y0%) / (x1% - x0%)
+  c = y0% - m * x0%
+  
+  x% = (y% - c) / m
+  ret% = 1
+  return
+  
+.find_intersects
+'---------------
+  pidx% = 0
+
+  ' check last-point to first
+  poly_x%(poly_idx%) = poly_x%(0)
+  poly_y%(poly_idx%) = poly_y%(0)
+
+  for idx% = 1 to poly_idx%
+    gosub check_line_intersect
+    if ret% = 1 then px%(pidx%)=x% : pidx% = pidx% + 1
+  next idx%
+
+  return
+
+.sort_intersects
+'---------------
+  ' bubble sort algorithm from: geeksforgeeks.org/bubble-sort
+  gosub clear_menu
+  char 0,0,1,1,2,str$(pidx%-1)
+
+  for i%=0 to pidx%-1
+    char 4+i%*4,0,1,1,2,str$(px%(i%))
+  next i%
+
+  getkey a$
+
+  for i% = 0 to pidx%-2
+    swapped% = 0
+    for j% = 0 to pidx%-i%-2
+      if px%(j%) > px%(j%+1) then begin
+        tmp%=px%(j%)
+        px%(j%) = px%(j%+1)
+        px%(j%) = tmp%
+        swapped% = 1
+      bend
+    next j%
+
+    if swapped% = 0 then i% = pidx%  ' exit early
+  next i%
+  return
+
+.draw_horizontal_intersects
+'--------------------------
+  gosub find_intersects
+  gosub sort_intersects
+  for idx%=0 to pidx%-1 step 2
+    line px%(idx%),y%,px%(idx%+1),y%
+  next idx%
+  return
+
+.fill_poly
+'---------
+  gosub find_ymin_ymax
+  for y%=ymin% to ymax%
+    gosub draw_horizontal_intersects
+  next y%
+  return
+
 .on_click_poly
 '-------------
   if poly_state% = 0 then begin
@@ -172,6 +267,7 @@ BUTTON btns(MAX_BTN) = [     {x5F}
     if poly_x%(poly_idx%-1)=mx% and poly_y%(poly_idx%-1)=my% then begin
       line mx%,my%,poly_x%(0),poly_y%(0)
       poly_state% = 0
+      if btns_state%(FILL) = 1 then gosub fill_poly
       return
     bend
   bend
