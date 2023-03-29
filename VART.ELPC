@@ -30,6 +30,7 @@
 #declare circle_state%, cx0%, cy0%, radius%
 #declare ellipse_state%, ex0%, ey0%, xradius%, yradius%
 #declare box_state%, bx0%, by0%
+#declare poly_state%, poly_idx%=0, poly_x%(100), poly_y%(100)
 
 #struct BUTTON x%, y%, w%, h%, type%, state%, text$
 
@@ -40,18 +41,20 @@
 #define CIRCLE  = 1
 #define ELLIPSE = 2
 #define BOX     = 3
-#define FILL    = 4
-#define EXIT    = 5
+#define POLY    = 4
+#define FILL    = 5
+#define EXIT    = 6
 
-#define MAX_BTN = 6
+#define MAX_BTN = 7
 
 BUTTON btns(MAX_BTN) = [     {x5F}
-  [ 0,  0, 6, 3, TYPE_NORMAL, 0, "line" ],   {x5F}
-  [ 6,  0, 8, 3, TYPE_NORMAL, 0, "circle" ], {x5F}
+  [ 0,  0, 6, 3, TYPE_NORMAL, 0, "line" ],    {x5F}
+  [ 6,  0, 8, 3, TYPE_NORMAL, 0, "circle" ],  {x5F}
   [ 14, 0, 9, 3, TYPE_NORMAL, 0, "ellipse" ], {x5F}
-  [ 23, 0, 5, 3, TYPE_NORMAL, 0, "box" ],    {x5F}
-  [ 28, 0, 6, 3, TYPE_TOGGLE, 0, "fill" ],   {x5F}
-  [ 34, 0, 6, 3, TYPE_NORMAL, 0, "exit" ]    {x5F}
+  [ 23, 0, 5, 3, TYPE_NORMAL, 0, "box" ],     {x5F}
+  [ 28, 0, 6, 3, TYPE_NORMAL, 0, "poly" ],    {x5F}
+  [ 34, 0, 6, 3, TYPE_TOGGLE, 0, "fill" ],    {x5F}
+  [ 40, 0, 6, 3, TYPE_NORMAL, 0, "exit" ]     {x5F}
 ] 
 
 .main
@@ -158,6 +161,33 @@ BUTTON btns(MAX_BTN) = [     {x5F}
   bend
   return
 
+.on_click_poly
+'-------------
+  if poly_state% = 0 then begin
+    poly_state% = 1
+    poly_idx% = 0
+  bend
+  
+  if poly_idx% > 0 then begin
+    if poly_x%(poly_idx%-1)=mx% and poly_y%(poly_idx%-1)=my% then begin
+      line mx%,my%,poly_x%(0),poly_y%(0)
+      poly_state% = 0
+      return
+    bend
+  bend
+
+  poly_x%(poly_idx%) = mx%
+  poly_y%(poly_idx%) = my%
+
+  if poly_idx% = 0 then begin
+    dot mx%, my%
+  bend:else begin
+    line poly_x%(poly_idx%-1), poly_y%(poly_idx%-1), mx%, my%
+  bend
+
+  poly_idx% = poly_idx% + 1
+  return
+
 .on_click_fill
 '-------------
   if btns_state%(FILL) = 0 then btns_state%(FILL)=1:else btns_state%(FILL)=0
@@ -169,6 +199,7 @@ BUTTON btns(MAX_BTN) = [     {x5F}
   if menu_selection = CIRCLE then gosub on_click_circle
   if menu_selection = ELLIPSE then gosub on_click_ellipse
   if menu_selection = BOX then gosub on_click_box
+  if menu_selection = POLY then gosub on_click_poly
   return
 
 .check_colour_keypress
