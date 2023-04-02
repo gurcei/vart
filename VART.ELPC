@@ -25,6 +25,7 @@
 #declare mx%, my%, mb%, mb_old%
 #declare menu_selection = -1
 #declare ret%
+#declare last_colour% = -1
 #declare selected_colour% = 1
 #declare old_menu_selection% = -1
 #declare ymin%, ymax%, idx%, pidx%, px%(20)
@@ -35,6 +36,13 @@
 #declare ellipse_state%, ex0%, ey0%, xradius%, yradius%
 #declare box_state%, bx0%, by0%
 #declare poly_state%, poly_idx%=0, poly_x%(100), poly_y%(100)
+
+#declare vec_data%(3000)
+vec_data%(0) = asc("v")  ' HEADER FOR "VECTOR" DATA
+vec_data%(1) = asc("e")
+vec_data%(2) = asc("c")
+#declare vec_size% = 3
+
 
 #struct BUTTON x%, y%, w%, h%, type%, state%, text$
 
@@ -47,19 +55,34 @@
 #define BOX     = 3
 #define POLY    = 4
 #define FILL    = 5
-#define EXIT    = 6
-
-#define MAX_BTN = 7
+#define SAVE    = 6
+#define LOAD    = 7
+#define EXIT    = 8
+#define MAX_BTN = 9
 
 BUTTON btns(MAX_BTN) = [     {x5F}
-  [ 0,  0, 6, 3, TYPE_NORMAL, 0, "line" ],    {x5F}
-  [ 6,  0, 8, 3, TYPE_NORMAL, 0, "circle" ],  {x5F}
-  [ 14, 0, 9, 3, TYPE_NORMAL, 0, "ellipse" ], {x5F}
-  [ 23, 0, 5, 3, TYPE_NORMAL, 0, "box" ],     {x5F}
-  [ 28, 0, 6, 3, TYPE_NORMAL, 0, "poly" ],    {x5F}
-  [ 34, 0, 6, 3, TYPE_TOGGLE, 0, "fill" ],    {x5F}
-  [ 40, 0, 6, 3, TYPE_NORMAL, 0, "exit" ]     {x5F}
+  [ 0, 0, 0, 0, TYPE_NORMAL, 0, "line" ],    {x5F}
+  [ 0, 0, 0, 0, TYPE_NORMAL, 0, "circle" ],  {x5F}
+  [ 0, 0, 0, 0, TYPE_NORMAL, 0, "ellipse" ], {x5F}
+  [ 0, 0, 0, 0, TYPE_NORMAL, 0, "box" ],     {x5F}
+  [ 0, 0, 0, 0, TYPE_NORMAL, 0, "poly" ],    {x5F}
+  [ 0, 0, 0, 0, TYPE_TOGGLE, 0, "fill" ],    {x5F}
+  [ 0, 0, 0, 0, TYPE_NORMAL, 0, "save" ],    {x5F}
+  [ 0, 0, 0, 0, TYPE_NORMAL, 0, "load" ],    {x5F}
+  [ 0, 0, 0, 0, TYPE_NORMAL, 0, "exit" ]     {x5F}
 ] 
+
+#define COLOUR = 255
+
+.init_btns
+'---------
+btns_w%(0) = len(btns_text$(0))+2
+btns_h%(0) = 3
+for k = 1 to MAX_BTN-1
+  btns_x%(k) = btns_x%(k-1) + btns_w%(k-1)
+  btns_w%(k) = len(btns_text$(k)) + 2
+  btns_h%(k) = 3
+next k
 
 .main
 '----
@@ -126,10 +149,25 @@ BUTTON btns(MAX_BTN) = [     {x5F}
   pen 0,selected_colour% : sprite 0,1,selected_colour%
   return
 
+.store_colour
+'------------
+  if last_colour% <> selected_colour% then begin
+    vec_data%(vec_size%) = COLOUR : vec_size% = vec_size% + 1
+    vec_data%(vec_size%) = selected_colour% : vec_size% = vec_size% + 1
+    last_colour% = selected_colour%
+  bend
+  return
+
 .on_click_line
 '-------------
-  if line_state% = 0 then lx0%=mx%:ly0%=my%:line_state%=1:dot mx%,my%:return
-  if line_state% = 1 then begin
+  if line_state% = 0 then begin
+    gosub store_colour
+    lx0%=mx%
+    ly0%=my%
+    dot mx%,my%
+    line_state%=1
+
+  bend:else if line_state% = 1 then begin
     line lx0%, ly0%, mx%, my%
     line_state% = 0
   bend
@@ -137,8 +175,13 @@ BUTTON btns(MAX_BTN) = [     {x5F}
 
 .on_click_circle
 '---------------
-  if circle_state% = 0 then cx0%=mx%:cy0%=my%:circle_state%=1:return
-  if circle_state% = 1 then begin
+  if circle_state% = 0 then begin
+    gosub store_colour
+    cx0%=mx%
+    cy0%=my%
+    circle_state%=1
+
+  bend:else if circle_state% = 1 then begin
     radius% = sqr( (mx%-cx0%)^2 + (my%-cy0%)^2 )
     circle cx0%, cy0%, radius%, btns_state%(FILL)
     circle_state% = 0
@@ -304,6 +347,14 @@ BUTTON btns(MAX_BTN) = [     {x5F}
   if btns_state%(FILL) = 0 then btns_state%(FILL)=1:else btns_state%(FILL)=0
   return
 
+.on_click_save
+'-------------
+  return
+
+.on_click_load
+'-------------
+  return
+
 .check_action_click
 '------------------
   if menu_selection = LINE then gosub on_click_line
@@ -311,6 +362,8 @@ BUTTON btns(MAX_BTN) = [     {x5F}
   if menu_selection = ELLIPSE then gosub on_click_ellipse
   if menu_selection = BOX then gosub on_click_box
   if menu_selection = POLY then gosub on_click_poly
+  if menu_selection = SAVE then gosub on_click_save
+  if menu_selection = LOAD then gosub on_click_load
   return
 
 .check_colour_keypress
