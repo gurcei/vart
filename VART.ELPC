@@ -393,14 +393,28 @@ next k
   next y%
   return
 
+.store_poly
+'----------
+  stor%(0) = POLY + 64 * btns_state%(FILL)
+  stor%(1) = poly_idx%
+  stor_cnt% = 1
+  for k = 0 to poly_idx%-1
+    mx% = poly_x%(k)
+    my% = poly_y%(k)
+    stor_cnt%=stor_cnt%+1 : stor%(stor_cnt%) = mx% and 255
+    stor_cnt%=stor_cnt%+1 : stor%(stor_cnt%) = mx% >> 8
+    stor_cnt%=stor_cnt%+1 : stor%(stor_cnt%) = my% and 255
+    stor_cnt%=stor_cnt%+1 : stor%(stor_cnt%) = my% >> 8
+  next k
+
+  gosub store
+
+  return
+
 .on_click_poly
 '-------------
   if poly_state% = 0 then begin
     gosub store_colour
-
-    stor%(0) = POLY + 64 * btns_state%(FILL)
-    stor%(1) = 0 ' placeholder for number of points
-    stor_cnt% = 1
 
     poly_state% = 1
 
@@ -411,8 +425,7 @@ next k
     if poly_x%(poly_idx%-1)=mx% and poly_y%(poly_idx%-1)=my% then begin
       line mx%,my%,poly_x%(0),poly_y%(0)
 
-      stor%(1) = poly_idx%
-      gosub store
+      gosub store_poly
 
       poly_state% = 0
       if btns_state%(FILL) = 1 then gosub fill_poly
@@ -422,11 +435,6 @@ next k
 
   poly_x%(poly_idx%) = mx%
   poly_y%(poly_idx%) = my%
-
-  stor_cnt%=stor_cnt%+1 : stor%(stor_cnt%) = mx% and 255
-  stor_cnt%=stor_cnt%+1 : stor%(stor_cnt%) = mx% >> 8
-  stor_cnt%=stor_cnt%+1 : stor%(stor_cnt%) = my% and 255
-  stor_cnt%=stor_cnt%+1 : stor%(stor_cnt%) = my% >> 8
 
   if poly_idx% = 0 then begin
     dot mx%, my%
@@ -598,6 +606,31 @@ next k
       goto nxt_lp
 
     bend
+
+    if load_state% = POLY then begin
+      print "poly ";
+      get#2,k:k = k and 255
+      poly_idx% = k
+
+      for k = 0 to poly_idx%-1
+        get#2,m0% : m0% = m0% and 255 : print m0%;
+        get#2,m1% : m1% = m1% and 255 : print m1%;
+        poly_x%(k) = m0% + (m1% << 8)
+        get#2,m0% : m0% = m0% and 255 : print m0%;
+        get#2,m1% : m1% = m1% and 255 : print m1%;
+        poly_y%(k) = m0% + (m1% << 8)
+
+        if (k>0) then line poly_x%(k-1), poly_y%(k-1), poly_x%(k), poly_y%(k)
+      next k
+      line poly_x%(poly_idx%-1),poly_y%(poly_idx%-1),poly_x%(0),poly_y%(0)
+      if btns_state%(FILL) = 1 then gosub fill_poly
+
+      gosub store_poly
+      load_state% = -1
+      goto nxt_lp
+
+    bend
+
 .nxt_lp
   loop
   dclose #2
