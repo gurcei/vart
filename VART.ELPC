@@ -258,6 +258,16 @@ next k
   bend
   return
 
+.store_box
+'---------
+    stor%(0) = BOX + 64 * btns_state%(FILL)
+    stor%(1) = bx0% and 255 : stor%(2) = bx0% >> 8
+    stor%(3) = by0% and 255 : stor%(4) = by0% >> 8
+    stor%(5) = mx% and 255 : stor%(6) = mx% >> 8
+    stor%(7) = my% and 255 : stor%(8) = my% >> 8
+    stor_cnt% = 8 : gosub store
+    return
+
 .on_click_box
 '------------
   if box_state% = 0 then begin
@@ -266,18 +276,12 @@ next k
     bx0%=mx%
     by0%=my%
     
-    stor%(0) = BOX + 64 * btns_state%(FILL)
-    stor%(1) = bx0% and 255 : stor%(2) = bx0% >> 8
-    stor%(3) = by0% and 255 : stor%(4) = by0% >> 8
-
     box_state%=1
 
   bend: else if box_state% = 1 then begin
     box bx0%, by0%, mx%, my%, btns_state%(FILL)
 
-    stor%(5) = mx% and 255 : stor%(6) = mx% >> 8
-    stor%(7) = my% and 255 : stor%(8) = my% >> 8
-    stor_cnt% = 8 : gosub store
+    gosub store_box
 
     box_state% = 0
   bend
@@ -572,6 +576,28 @@ next k
 
     bend
 
+    if load_state% = BOX then begin
+      print "box ";
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      bx0% = m0% + (m1% << 8)
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      by0% = m0% + (m1% << 8)
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      mx% = m0% + (m1% << 8)
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      my% = m0% + (m1% << 8)
+
+      box bx0%, by0%, mx%, my%, btns_state%(FILL)
+
+      gosub store_box
+      load_state% = -1
+      goto nxt_lp
+
+    bend
 .nxt_lp
   loop
   dclose #2
