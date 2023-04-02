@@ -170,6 +170,16 @@ next k
   next k
   return
 
+.store_line
+'----------
+  stor%(0) = LINE + 64 * btns_state%(FILL)
+  stor%(1) = lx0% and 255 : stor%(2) = lx0% >> 8
+  stor%(3) = ly0% and 255 : stor%(4) = ly0% >> 8
+  stor%(5) = mx% and 255 : stor%(6) = mx% >> 8
+  stor%(7) = my% and 255 : stor%(8) = my% >> 8
+  stor_cnt% = 8 : gosub store
+  return
+
 .on_click_line
 '-------------
   if line_state% = 0 then begin
@@ -178,18 +188,12 @@ next k
     ly0%=my%
     dot mx%,my%
 
-    stor%(0) = LINE + 64 * btns_state%(FILL)
-    stor%(1) = lx0% and 255 : stor%(2) = lx0% >> 8
-    stor%(3) = ly0% and 255 : stor%(4) = ly0% >> 8
-
     line_state%=1
 
   bend:else if line_state% = 1 then begin
     line lx0%, ly0%, mx%, my%
 
-    stor%(5) = mx% and 255 : stor%(6) = mx% >> 8
-    stor%(7) = my% and 255 : stor%(8) = my% >> 8
-    stor_cnt% = 8 : gosub store
+    gosub store_line
 
     line_state% = 0
   bend
@@ -452,6 +456,7 @@ next k
   get#2, k:print k;
   if k<>asc("c") then return
   ret% = 1
+  vec_size% = 3
   load_state%=-1
   return
 
@@ -482,6 +487,14 @@ next k
       print "colour ";
       get#2,k:print k;
       pen 0, k
+
+      vec_data%(vec_size%) = COLOUR
+      vec_size% = vec_size% +1
+      vec_data%(vec_size%) = k
+      vec_size% = vec_size% +1
+      last_colour% = k
+      selected_colour% = k
+
       load_state% = -1
       goto nxt_lp
     bend
@@ -501,6 +514,9 @@ next k
       get#2,m1% : m1% = m1% and 255 : print m1%;
       my% = m0% + (m1% << 8)
       line lx0%, ly0%, mx%, my%
+
+      gosub store_line
+
       load_state% = -1
       goto nxt_lp
     bend
