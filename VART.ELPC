@@ -227,6 +227,16 @@ next k
   bend
   return
 
+.store_ellipse
+'-------------
+  stor%(0) = ELLIPSE + 64 * btns_state%(FILL)
+  stor%(1) = ex0% and 255 : stor%(2) = ex0% >> 8
+  stor%(3) = ey0% and 255 : stor%(4) = ey0% >> 8
+  stor%(5) = xradius% and 255 : stor%(6) = xradius% >> 8
+  stor%(7) = yradius% and 255 : stor%(8) = yradius% >> 8
+  stor_cnt% = 8 : gosub store
+  return
+
 .on_click_ellipse
 '----------------
   if ellipse_state% = 0 then begin
@@ -235,10 +245,6 @@ next k
     ex0%=mx%
     ey0%=my%
 
-    stor%(0) = ELLIPSE + 64 * btns_state%(FILL)
-    stor%(1) = ex0% and 255 : stor%(2) = ex0% >> 8
-    stor%(3) = ey0% and 255 : stor%(4) = ey0% >> 8
-
     ellipse_state%=1
   
   bend:else if ellipse_state% = 1 then begin
@@ -246,9 +252,7 @@ next k
     yradius% = abs(my%-ey0%)
     ellipse ex0%, ey0%, xradius%, yradius%, btns_state%(FILL)
 
-    stor%(5) = xradius% and 255 : stor%(6) = xradius% >> 8
-    stor%(7) = xradius% and 255 : stor%(8) = xradius% >> 8
-    stor_cnt% = 8 : gosub store
+    gosub store_ellipse
 
     ellipse_state% = 0
   bend
@@ -544,6 +548,30 @@ next k
       load_state% = -1
       goto nxt_lp
     bend
+
+    if load_state% = ELLIPSE then begin
+      print "ellipse ";
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      ex0% = m0% + (m1% << 8)
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      ey0% = m0% + (m1% << 8)
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      xradius% = m0% + (m1% << 8)
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      yradius% = m0% + (m1% << 8)
+
+      ellipse ex0%, ey0%, xradius%, yradius%, btns_state%(FILL)
+
+      gosub store_ellipse
+      load_state% = -1
+      goto nxt_lp
+
+    bend
+
 .nxt_lp
   loop
   dclose #2
