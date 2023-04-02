@@ -199,6 +199,15 @@ next k
   bend
   return
 
+.store_circle
+'------------
+  stor%(0) = CIRCLE + 64 * btns_state%(FILL)
+  stor%(1) = cx0% and 255 : stor%(2) = cx0% >> 8
+  stor%(3) = cy0% and 255 : stor%(4) = cy0% >> 8
+  stor%(5) = radius% and 255 : stor%(6) = radius% >> 8
+  stor_cnt% = 6 : gosub store
+  return
+
 .on_click_circle
 '---------------
   if circle_state% = 0 then begin
@@ -206,18 +215,13 @@ next k
     cx0%=mx%
     cy0%=my%
 
-    stor%(0) = CIRCLE + 64 * btns_state%(FILL)
-    stor%(1) = cx0% and 255 : stor%(2) = cx0% >> 8
-    stor%(3) = cy0% and 255 : stor%(4) = cy0% >> 8
-
     circle_state%=1
 
   bend:else if circle_state% = 1 then begin
     radius% = sqr( (mx%-cx0%)^2 + (my%-cy0%)^2 )
     circle cx0%, cy0%, radius%, btns_state%(FILL)
 
-    stor%(5) = radius% and 255 : stor%(6) = radius% >> 8
-    stor_cnt% = 6 : gosub store
+    gosub store_circle
 
     circle_state% = 0
   bend
@@ -479,6 +483,7 @@ next k
     if load_state% = -1 then begin
       print "new_cmd ";
       fill_state% = (k and 64)/64
+      btns_state%(FILL) = fill_state%
       k = k and 63
       load_state% = k
     bend
@@ -517,6 +522,25 @@ next k
 
       gosub store_line
 
+      load_state% = -1
+      goto nxt_lp
+    bend
+
+    if load_state% = CIRCLE then begin
+      print "circle ";
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      cx0% = m0% + (m1% << 8)
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      cy0% = m0% + (m1% << 8)
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      radius% = m0% + (m1% << 8)
+
+      circle cx0%, cy0%, radius%, btns_state%(FILL)
+
+      gosub store_circle
       load_state% = -1
       goto nxt_lp
     bend
