@@ -20,7 +20,7 @@
 .declares
 '--------
 #declare key$
-#declare k,a$
+#declare k,m0%, m1%, a$
 #declare x%, y%, w%, h%, x2%, y2%
 #declare mx%, my%, mb%, mb_old%
 #declare menu_selection = -1
@@ -30,6 +30,9 @@
 #declare old_menu_selection% = -1
 #declare ymin%, ymax%, idx%, pidx%, px%(20)
 #declare rev%, y0%, y1%, x0%, x1%, tmp%, m, c, i%, j%, swapped%
+
+#declare load_state% = -4
+#declare fill_state%
 
 #declare line_state%, lx0%, ly0%
 #declare circle_state%, cx0%, cy0%, radius%
@@ -43,6 +46,7 @@ vec_data%(1) = asc("e")
 vec_data%(2) = asc("c")
 #declare vec_size% = 3
 
+#declare stor%(500), stor_cnt%
 
 #struct BUTTON x%, y%, w%, h%, type%, state%, text$
 
@@ -72,7 +76,7 @@ BUTTON btns(MAX_BTN) = [     {x5F}
   [ 0, 0, 0, 0, TYPE_NORMAL, 0, "exit" ]     {x5F}
 ] 
 
-#define COLOUR = 255
+#define COLOUR = 63
 
 .init_btns
 '---------
@@ -158,6 +162,14 @@ next k
   bend
   return
 
+.store
+'-----
+  for k = 0 to stor_cnt%
+    vec_data%(vec_size%) = stor%(k)
+    vec_size% = vec_size% + 1
+  next k
+  return
+
 .on_click_line
 '-------------
   if line_state% = 0 then begin
@@ -165,10 +177,20 @@ next k
     lx0%=mx%
     ly0%=my%
     dot mx%,my%
+
+    stor%(0) = LINE + 64 * btns_state%(FILL)
+    stor%(1) = lx0% and 255 : stor%(2) = lx0% >> 8
+    stor%(3) = ly0% and 255 : stor%(4) = ly0% >> 8
+
     line_state%=1
 
   bend:else if line_state% = 1 then begin
     line lx0%, ly0%, mx%, my%
+
+    stor%(5) = mx% and 255 : stor%(6) = mx% >> 8
+    stor%(7) = my% and 255 : stor%(8) = my% >> 8
+    stor_cnt% = 8 : gosub store
+
     line_state% = 0
   bend
   return
@@ -179,31 +201,72 @@ next k
     gosub store_colour
     cx0%=mx%
     cy0%=my%
+
+    stor%(0) = CIRCLE + 64 * btns_state%(FILL)
+    stor%(1) = cx0% and 255 : stor%(2) = cx0% >> 8
+    stor%(3) = cy0% and 255 : stor%(4) = cy0% >> 8
+
     circle_state%=1
 
   bend:else if circle_state% = 1 then begin
     radius% = sqr( (mx%-cx0%)^2 + (my%-cy0%)^2 )
     circle cx0%, cy0%, radius%, btns_state%(FILL)
+
+    stor%(5) = radius% and 255 : stor%(6) = radius% >> 8
+    stor_cnt% = 6 : gosub store
+
     circle_state% = 0
   bend
   return
 
 .on_click_ellipse
 '----------------
-  if ellipse_state% = 0 then ex0%=mx%:ey0%=my%:ellipse_state%=1:return
-  if ellipse_state% = 1 then begin
+  if ellipse_state% = 0 then begin
+    gosub store_colour
+
+    ex0%=mx%
+    ey0%=my%
+
+    stor%(0) = ELLIPSE + 64 * btns_state%(FILL)
+    stor%(1) = ex0% and 255 : stor%(2) = ex0% >> 8
+    stor%(3) = ey0% and 255 : stor%(4) = ey0% >> 8
+
+    ellipse_state%=1
+  
+  bend:else if ellipse_state% = 1 then begin
     xradius% = abs(mx%-ex0%)
     yradius% = abs(my%-ey0%)
     ellipse ex0%, ey0%, xradius%, yradius%, btns_state%(FILL)
+
+    stor%(5) = xradius% and 255 : stor%(6) = xradius% >> 8
+    stor%(7) = xradius% and 255 : stor%(8) = xradius% >> 8
+    stor_cnt% = 8 : gosub store
+
     ellipse_state% = 0
   bend
   return
 
 .on_click_box
 '------------
-  if box_state% = 0 then bx0%=mx%:by0%=my%:box_state%=1:return
-  if box_state% = 1 then begin
+  if box_state% = 0 then begin
+    gosub store_colour
+
+    bx0%=mx%
+    by0%=my%
+    
+    stor%(0) = BOX + 64 * btns_state%(FILL)
+    stor%(1) = bx0% and 255 : stor%(2) = bx0% >> 8
+    stor%(3) = by0% and 255 : stor%(4) = by0% >> 8
+
+    box_state%=1
+
+  bend: else if box_state% = 1 then begin
     box bx0%, by0%, mx%, my%, btns_state%(FILL)
+
+    stor%(5) = mx% and 255 : stor%(6) = mx% >> 8
+    stor%(7) = my% and 255 : stor%(8) = my% >> 8
+    stor_cnt% = 8 : gosub store
+
     box_state% = 0
   bend
   return
@@ -317,13 +380,24 @@ next k
 .on_click_poly
 '-------------
   if poly_state% = 0 then begin
+    gosub store_colour
+
+    stor%(0) = POLY + 64 * btns_state%(FILL)
+    stor%(1) = 0 ' placeholder for number of points
+    stor_cnt% = 1
+
     poly_state% = 1
+
     poly_idx% = 0
   bend
   
   if poly_idx% > 0 then begin
     if poly_x%(poly_idx%-1)=mx% and poly_y%(poly_idx%-1)=my% then begin
       line mx%,my%,poly_x%(0),poly_y%(0)
+
+      stor%(1) = poly_idx%
+      gosub store
+
       poly_state% = 0
       if btns_state%(FILL) = 1 then gosub fill_poly
       return
@@ -332,6 +406,11 @@ next k
 
   poly_x%(poly_idx%) = mx%
   poly_y%(poly_idx%) = my%
+
+  stor_cnt%=stor_cnt%+1 : stor%(stor_cnt%) = mx% and 255
+  stor_cnt%=stor_cnt%+1 : stor%(stor_cnt%) = mx% >> 8
+  stor_cnt%=stor_cnt%+1 : stor%(stor_cnt%) = my% and 255
+  stor_cnt%=stor_cnt%+1 : stor%(stor_cnt%) = my% >> 8
 
   if poly_idx% = 0 then begin
     dot mx%, my%
@@ -349,10 +428,86 @@ next k
 
 .on_click_save
 '-------------
+  border 3
+  ' for now, just save to a single hard-coded file
+  ^^dopen #2,"@test.v",w,u8
+  for k = 0 to vec_size%-1
+    print #2, chr$(vec_data%(k));
+  next k
+  dclose #2
   return
+
+.load_error
+'----------
+  border 2
+  load_state% = -4
+  return
+
+.check_vec_header
+'----------------
+  ret% = 0
+  if k<>asc("v") then return
+  get#2, k:print k;
+  if k<>asc("e") then return
+  get#2, k:print k;
+  if k<>asc("c") then return
+  ret% = 1
+  load_state%=-1
+  return
+
 
 .on_click_load
 '-------------
+  ' for now, just load from a single hard-coded file
+  load_state% = -4
+  ^^dopen #2,"test.v",r,u8
+  do
+    get#2, k:print "rd=";k;
+    if st then exit
+
+    if load_state% = -4 then begin
+      print "check_vec ";
+      gosub check_vec_header
+      if ret% = 0 then gosub load_error:exit:else goto nxt_lp
+    bend
+
+    if load_state% = -1 then begin
+      print "new_cmd ";
+      fill_state% = (k and 64)/64
+      k = k and 63
+      load_state% = k
+    bend
+
+    if load_state% = COLOUR then begin
+      print "colour ";
+      get#2,k:print k;
+      pen 0, k
+      load_state% = -1
+      goto nxt_lp
+    bend
+
+    if load_state% = LINE then begin
+      print "line ";
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      lx0% = m0% + (m1% << 8)
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      ly0% = m0% + (m1% << 8)
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      mx% = m0% + (m1% << 8)
+      get#2,m0% : m0% = m0% and 255 : print m0%;
+      get#2,m1% : m1% = m1% and 255 : print m1%;
+      my% = m0% + (m1% << 8)
+      line lx0%, ly0%, mx%, my%
+      load_state% = -1
+      goto nxt_lp
+    bend
+.nxt_lp
+  loop
+  dclose #2
+
   return
 
 .check_action_click
@@ -362,8 +517,6 @@ next k
   if menu_selection = ELLIPSE then gosub on_click_ellipse
   if menu_selection = BOX then gosub on_click_box
   if menu_selection = POLY then gosub on_click_poly
-  if menu_selection = SAVE then gosub on_click_save
-  if menu_selection = LOAD then gosub on_click_load
   return
 
 .check_colour_keypress
@@ -437,7 +590,14 @@ next k
       if menu_selection = FILL then begin
         gosub on_click_fill
         menu_selection = old_menu_selection%
+
+      bend: else if menu_selection = SAVE then begin
+        gosub on_click_save
+
+      bend: else if menu_selection = LOAD then begin
+        gosub on_click_load
       bend
+
       ret%=1
       gosub draw_menu_system
       k=MAX_BTN-1
