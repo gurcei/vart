@@ -38,9 +38,9 @@
 #declare circle_state%, cx0%, cy0%, radius%
 #declare ellipse_state%, ex0%, ey0%, xradius%, yradius%
 #declare box_state%, bx0%, by0%
-#declare poly_state%, poly_idx%=0, poly_x%(100), poly_y%(100)
+#declare poly_state%, poly_idx%=0, poly_x%(250), poly_y%(250)
 
-#declare vec_data%(3000)
+#declare vec_data%(6000)
 vec_data%(0) = asc("v")  ' HEADER FOR "VECTOR" DATA
 vec_data%(1) = asc("e")
 vec_data%(2) = asc("c")
@@ -646,7 +646,7 @@ next k
   if menu_selection = POLY then gosub on_click_poly
   return
 
-.check_colour_keypress
+.check_keypress
 '---------------------
   if a$=chr$(144) then selected_colour% = 0
   if a$=chr$(5)   then selected_colour% = 1
@@ -666,13 +666,25 @@ next k
   if a$=chr$(155) then selected_colour% = 15
 
   pen 0,selected_colour% : sprite 0,1,selected_colour%
+
+  mx% = rsppos(0,0)
+  my% = rsppos(0,1)
+  ' left
+  if a$=chr$(157) then movspr 0, mx%-1, my%
+  ' right
+  if a$=chr$(29) then movspr 0, mx%+1, my%
+  ' up
+  if a$=chr$(145) then movspr 0, mx%, my%-1
+  ' down
+  if a$=chr$(17) then movspr 0, mx%, my%+1
+
   return
 
 .check_input
 '-----------
   get a$
   if a$="x" then return
-  gosub check_colour_keypress
+  gosub check_keypress
 
   rmouse mx%, my%, mb%
   mx%=(mx%-24)*2
