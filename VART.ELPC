@@ -32,7 +32,7 @@
 #declare rev%, y0%, y1%, x0%, x1%, tmp%, m, c, i%, j%, swapped%
 
 #declare load_state% = -4
-#declare fill_state%
+#declare fill_state% = 0
 
 #declare line_state%, lx0%, ly0%
 #declare circle_state%, cx0%, cy0%, radius%
@@ -103,7 +103,7 @@ next k
     read x%
     poke $0600+k, x%
   next k
-  mouse on, 1
+  mouse on, 1, 0
   sprite 0,1,1
   return
 
@@ -637,6 +637,17 @@ next k
 
   return
 
+.reset_all_art_states
+'--------------------
+  load_state% = -4
+  fill_state% = 0
+  line_state% = 0
+  circle_state% = 0
+  ellipse_state% = 0
+  box_state% = 0
+  poly_state% = 0
+  return
+
 .check_action_click
 '------------------
   if menu_selection = LINE then gosub on_click_line
@@ -644,6 +655,11 @@ next k
   if menu_selection = ELLIPSE then gosub on_click_ellipse
   if menu_selection = BOX then gosub on_click_box
   if menu_selection = POLY then gosub on_click_poly
+  return
+
+.reposition_mouse
+'----------------
+  movspr 0, mx%, my%
   return
 
 .check_keypress
@@ -667,17 +683,27 @@ next k
 
   pen 0,selected_colour% : sprite 0,1,selected_colour%
 
-  mx% = rsppos(0,0)
-  my% = rsppos(0,1)
-  ' left
-  if a$=chr$(157) then movspr 0, mx%-1, my%
-  ' right
-  if a$=chr$(29) then movspr 0, mx%+1, my%
-  ' up
-  if a$=chr$(145) then movspr 0, mx%, my%-1
-  ' down
-  if a$=chr$(17) then movspr 0, mx%, my%+1
+  mx%=rsppos(0,0)
+  my%=rsppos(0,1)
 
+  ' left
+  if a$=chr$(157) then mx%=mx%-1:gosub reposition_mouse
+  ' right
+  if a$=chr$(29) then mx%=mx%+1:gosub reposition_mouse
+  ' up
+  if a$=chr$(145) then my%=my%-1:gosub reposition_mouse
+  ' down
+  if a$=chr$(17) then my%=my%+1:gosub reposition_mouse
+  ' return/enter
+
+  if a$=chr$(13) then gosub read_scaled_mouse : gosub check_action_click
+  return
+
+.read_scaled_mouse
+'-----------------
+  rmouse mx%, my%, mb%
+  mx%=(mx%-24)*2
+  my%=(my%-50)*2
   return
 
 .check_input
@@ -686,9 +712,7 @@ next k
   if a$="x" then return
   gosub check_keypress
 
-  rmouse mx%, my%, mb%
-  mx%=(mx%-24)*2
-  my%=(my%-50)*2
+  gosub read_scaled_mouse
 
   if mb%=128 and mb_old%=0 then begin
     mb_old%=128
@@ -696,6 +720,7 @@ next k
     gosub check_button_hit
     
     if ret%=1 then begin
+      gosub reset_all_art_states
       if menu_selection = EXIT then screen close:end
     bend:else begin
       gosub check_action_click
